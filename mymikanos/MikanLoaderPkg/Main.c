@@ -26,6 +26,8 @@ EFI_STATUS GetMemoryMap(struct MemoryMap* map) {
     return EFI_BUFFER_TOO_SMALL;
   }
 
+  map->map_size = map->buffer_size;
+
   /**
    * gBS->GetMemoryMapの仕様
    *
@@ -50,12 +52,11 @@ EFI_STATUS GetMemoryMap(struct MemoryMap* map) {
    * )
    */
   return gBS->GetMemoryMap(
-    &map->map_size,
-    (EFI_MEMORY_DESCRIPTOR*)map->buffer,
-    &map->map_key,
-    &map->descriptor_size,
-    &map->descriptor_version
-  );
+      &map->map_size,
+      (EFI_MEMORY_DESCRIPTOR*)map->buffer,
+      &map->map_key,
+      &map->descriptor_size,
+      &map->descriptor_version);
 }
 
 const CHAR16* GetMemoryTypeUnicode(EFI_MEMORY_TYPE type) {
@@ -80,34 +81,30 @@ const CHAR16* GetMemoryTypeUnicode(EFI_MEMORY_TYPE type) {
   }
 }
 
-EFI_STATUS SaveMemoryMap(struct MemoryMap* map, EFI_FILE_PROTOCOL *file) {
+EFI_STATUS SaveMemoryMap(struct MemoryMap* map, EFI_FILE_PROTOCOL* file) {
   CHAR8 buf[256];
   UINTN len;
 
-  CHAR8* header = "Index, Type, Type(name), PhysicalStart, NumberOfPages, Attribute\n";
+  CHAR8* header =
+    "Index, Type, Type(name), PhysicalStart, NumberOfPages, Attribute\n";
   len = AsciiStrLen(header);
   file->Write(file, &len, header);
 
-  Print(L"map->buffer = %08lx, map->map_size = %08lx\n", map->buffer, map->map_size);
+  Print(L"map->buffer = %08lx, map->map_size = %08lx\n",
+      map->buffer, map->map_size);
 
   EFI_PHYSICAL_ADDRESS iter;
   int i;
-  for (
-    iter = (EFI_PHYSICAL_ADDRESS)map->buffer, i = 0;
-    iter < (EFI_PHYSICAL_ADDRESS)map->buffer + map->map_size;
-    iter += map->descriptor_size, i++) {
+  for (iter = (EFI_PHYSICAL_ADDRESS)map->buffer, i = 0;
+       iter < (EFI_PHYSICAL_ADDRESS)map->buffer + map->map_size;
+       iter += map->descriptor_size, i++) {
     EFI_MEMORY_DESCRIPTOR* desc = (EFI_MEMORY_DESCRIPTOR*)iter;
     len = AsciiSPrint(
-      buf, 
-      sizeof(buf),
-      "%u, %x, %-ls, %08lx, %lx, %lx\n",
-      i,
-      desc->Type,
-      GetMemoryTypeUnicode(desc->Type),
-      desc->PhysicalStart,
-      desc->NumberOfPages,
-      desc->Attribute & 0xffffflu
-    );
+        buf, sizeof(buf),
+        "%u, %x, %-ls, %08lx, %lx, %lx\n",
+        i, desc->Type, GetMemoryTypeUnicode(desc->Type),
+        desc->PhysicalStart, desc->NumberOfPages,
+        desc->Attribute & 0xffffflu);
     file->Write(file, &len, buf);
   }
 
@@ -144,8 +141,7 @@ EFI_STATUS EFIAPI UefiMain(
     EFI_SYSTEM_TABLE* system_table) {
   Print(L"Hello, Mikan World!\n");
 
-  // メモリマップをCSVファイルに書き込み処理
-  CHAR8 memmap_buf[4096 * 4]; // 16KiB
+  CHAR8 memmap_buf[4096 * 4];
   struct MemoryMap memmap = {sizeof(memmap_buf), memmap_buf, 0, 0, 0, 0};
   GetMemoryMap(&memmap);
 
@@ -153,15 +149,15 @@ EFI_STATUS EFIAPI UefiMain(
   OpenRootDir(image_handle, &root_dir);
 
   EFI_FILE_PROTOCOL* memmap_file;
+  
   // 書き込み先のファイルを開く関数
   root_dir->Open(
-    root_dir, &memmap_file, L"\\memmap",
-    EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE, 0
-  );
+      root_dir, &memmap_file, L"\\memmap",
+      EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE, 0);
 
   SaveMemoryMap(&memmap, memmap_file);
   memmap_file->Close(memmap_file);
-
+  
   // カーネルファイルを読み込む処理
   EFI_FILE_PROTOCOL* kernel_file;
   root_dir->Open(
@@ -170,14 +166,16 @@ EFI_STATUS EFIAPI UefiMain(
 
   // \kernel.elfの12文字分のバイト数を確保する
   // EFI_FILE_INFOのバイト数にFileNameのバイト数が含まれていないため
-
   UINTN file_info_size = sizeof(EFI_FILE_INFO) + sizeof(CHAR16) * 12;
   UINT8 file_info_buffer[file_info_size];
 
   // カーネルファイルの情報を取得
   kernel_file->GetInfo(
-      kernel_file, &gEfiFileInfoGuid,
-      &file_info_size, file_info_buffer);
+    kernel_file,
+    &gEfiFileInfoGuid,
+    &file_info_size,
+    file_info_buffer
+  );
 
   /**
    * EFI_FILE_INFO
@@ -192,7 +190,7 @@ EFI_STATUS EFIAPI UefiMain(
   EFI_FILE_INFO* file_info = (EFI_FILE_INFO*)file_info_buffer;
   UINTN kernel_file_size = file_info->FileSize;
 
-  EFI_PHYSICAL_ADDRESS kernel_base_addr = 0x100000; // カーネルのエントリーポイントが設定されているアドレス
+  EFI_PHYSICAL_ADDRESS kernel_base_addr = 0x100000;
   gBS->AllocatePages(
     AllocateAddress,                      // メモリの確保の仕方 
     EfiLoaderData,                        // 確保するメモリ領域の種別

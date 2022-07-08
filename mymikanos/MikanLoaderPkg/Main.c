@@ -192,20 +192,13 @@ EFI_STATUS EFIAPI UefiMain(
   EFI_FILE_INFO* file_info = (EFI_FILE_INFO*)file_info_buffer;
   UINTN kernel_file_size = file_info->FileSize;
 
-  // EFI_PHYSICAL_ADDRESS kernel_base_addr = 0x100000; // カーネルのエントリーポイントが設定されているアドレス
-  // gBS->AllocatePages(
-  //   AllocateAddress,                      // メモリの確保の仕方 
-  //   EfiLoaderData,                        // 確保するメモリ領域の種別
-  //   (kernel_file_size + 0xfff) / 0x1000,  // 大きさ（ページサイズを上げるための調整）
-  //   &kernel_base_addr                     // 確保したメモリ領域のアドレス
-  // );
-  // kernel_file->Read(kernel_file, &kernel_file_size, (VOID*)kernel_base_addr);
-  // Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
-
-  EFI_PHYSICAL_ADDRESS kernel_base_addr = 0x100000;
+  EFI_PHYSICAL_ADDRESS kernel_base_addr = 0x100000; // カーネルのエントリーポイントが設定されているアドレス
   gBS->AllocatePages(
-      AllocateAddress, EfiLoaderData,
-      (kernel_file_size + 0xfff) / 0x1000, &kernel_base_addr);
+    AllocateAddress,                      // メモリの確保の仕方 
+    EfiLoaderData,                        // 確保するメモリ領域の種別
+    (kernel_file_size + 0xfff) / 0x1000,  // 大きさ（ページサイズを上げるための調整）
+    &kernel_base_addr                     // 確保したメモリ領域のアドレス
+  );
   kernel_file->Read(kernel_file, &kernel_file_size, (VOID*)kernel_base_addr);
   Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
 

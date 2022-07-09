@@ -178,6 +178,10 @@ const CHAR16* GetPixelFormatUnicode(EFI_GRAPHICS_PIXEL_FORMAT fmt) {
   }
 }
 
+void Halt(void) {
+  while (1) __asm__("hlt");
+}
+
 EFI_STATUS EFIAPI UefiMain(
     EFI_HANDLE image_handle,
     EFI_SYSTEM_TABLE* system_table) {
@@ -251,12 +255,18 @@ EFI_STATUS EFIAPI UefiMain(
   UINTN kernel_file_size = file_info->FileSize;
 
   EFI_PHYSICAL_ADDRESS kernel_base_addr = 0x100000;
-  gBS->AllocatePages(
+  status = gBS->AllocatePages(
     AllocateAddress,                      // メモリの確保の仕方 
     EfiLoaderData,                        // 確保するメモリ領域の種別
     (kernel_file_size + 0xfff) / 0x1000,  // 大きさ（ページサイズを上げるための調整）
     &kernel_base_addr                     // 確保したメモリ領域のアドレス
   );
+
+  if (EFI_ERROR(status)) {
+    Print(L"failed to allocate pages: %r", status);
+    Halt();
+  }
+  
   kernel_file->Read(kernel_file, &kernel_file_size, (VOID*)kernel_base_addr);
   Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
 

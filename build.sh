@@ -1,4 +1,5 @@
 #!/bin/bash
 
-cd ~/edk2
+cd /workspaces/mikanos-devcontainer/mymikanos/kernel
+make
 build

@@ -2,9 +2,7 @@
 
 # なぜかシェルだと通らない
 # remote containerに入った際に、以下のコマンドを実行しておく
-# cd ~/edk2
-# source edksetup.sh
-# cd /workspaces/mikanos-devcontainer/
+# source ~/edk2/edksetup.sh
 
 OS_DIR=/workspaces/mikanos-devcontainer/mymikanos
 cp config/target.txt ~/edk2/Conf/target.txt 

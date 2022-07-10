@@ -6,7 +6,7 @@ class Console {
   public:
     // 縦25行、横80文字
     static const int kRows = 25, kColumns = 80;
-    Console(PixelWriter& fg_color, const PixelColor& bg_color);
+  Console(PixelWriter& writer, const PixelColor& fg_color, const PixelColor& bg_color);
     void PutString(const char* s);
 
   private:
